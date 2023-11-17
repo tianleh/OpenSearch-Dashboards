@@ -123,4 +123,5 @@ export const stackManagementSchema: MakeSchemaFrom<UsageStats> = {
   'csv:quoteValues': { type: 'boolean' },
   'dateFormat:dow': { type: 'keyword' },
   dateFormat: { type: 'keyword' },
+  xFrameOptions: { type: 'keyword' },
 };

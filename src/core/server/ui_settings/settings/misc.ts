@@ -49,5 +49,26 @@ export const getMiscUiSettings = (): Record<string, UiSettingsParams> => {
       readonly: true,
       schema: schema.maybe(schema.number()),
     },
+    xFrameOptions: {
+      name: i18n.translate('core.ui_settings.params.xFrameOptions', {
+        defaultMessage: 'x-frame-options',
+      }),
+      value: 'SAMEORIGIN',
+      description: i18n.translate('core.ui_settings.params.xFrameOptionsDesc', {
+        defaultMessage: 'Change the value of x-frame-options',
+      }),
+      type: 'select',
+      options: ['SAMEORIGIN', 'DENY'],
+      optionLabels: {
+        modern: i18n.translate('core.ui_settings.params.xFrameOptionsModern', {
+          defaultMessage: 'Modern',
+        }),
+        legacy: i18n.translate('core.ui_settings.params.xFrameOptionsLegacy', {
+          defaultMessage: 'Legacy',
+        }),
+      },
+      // category: ['appearance'],
+      schema: schema.oneOf([schema.literal('SAMEORIGIN'), schema.literal('DENY')]),
+    },
   };
 };
