@@ -118,6 +118,7 @@ export function reader(
       await close();
     }
 
+    console.log(`docs are ${docs}`);
     return docs;
   };
 }

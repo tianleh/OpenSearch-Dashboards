@@ -326,6 +326,7 @@ export interface HttpServiceStart {
 export interface InternalHttpServiceStart extends HttpServiceStart {
   /** Indicates if the http server is listening on the configured port */
   isListening: () => boolean;
+  opensearch: opensearchStart;
 }
 
 /** @public */

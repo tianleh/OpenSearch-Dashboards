@@ -84,6 +84,8 @@ export class IndexMigrator {
 async function requiresMigration(context: Context): Promise<boolean> {
   const { client, alias, documentMigrator, dest, log } = context;
 
+  log.info(`*****check if migration is needed`);
+
   // Have all of our known migrations been run against the index?
   const hasMigrations = await Index.migrationsUpToDate(
     client,

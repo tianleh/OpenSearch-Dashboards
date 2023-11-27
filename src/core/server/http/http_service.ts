@@ -32,6 +32,8 @@ import { Observable, Subscription, combineLatest } from 'rxjs';
 import { first, map } from 'rxjs/operators';
 import { Server } from '@hapi/hapi';
 import { pick } from '@osd/std';
+import { relativeTimeThreshold } from 'moment';
+import * as Index from '../../../../src/core/server/saved_objects/migrations/core/opensearch_index';
 
 import { CoreService } from '../../types';
 import { Logger, LoggerFactory } from '../logging';
@@ -53,12 +55,15 @@ import {
   InternalHttpServiceStart,
 } from './types';
 
-import { RequestHandlerContext } from '../../server';
+import { OpenSearchServiceStart, RequestHandlerContext } from '../../server';
 import { registerCoreHandlers } from './lifecycle_handlers';
 
 interface SetupDeps {
   context: ContextSetup;
 }
+
+const SCROLL_SIZE = 1000;
+const SCROLL_TIMEOUT = '1m';
 
 /** @internal */
 export class HttpService
@@ -90,6 +95,7 @@ export class HttpService
   }
 
   public async setup(deps: SetupDeps) {
+    this.log.info(`***** entering HttpService setup`);
     this.requestHandlerContext = deps.context.createContextContainer();
     this.configSubscription = this.config$.subscribe(() => {
       if (this.httpServer.isListening()) {
@@ -109,6 +115,7 @@ export class HttpService
 
     const { registerRouter, ...serverContract } = await this.httpServer.setup(config);
 
+    this.log.info(`***** registerCoreHandlers(serverContract, config, this.env);`);
     registerCoreHandlers(serverContract, config, this.env);
 
     this.internalSetup = {
@@ -127,21 +134,61 @@ export class HttpService
         provider: RequestHandlerContextProvider<T>
       ) => this.requestHandlerContext!.registerContext(pluginOpaqueId, contextName, provider),
     };
-
+    this.log.info(`***** exit HttpService setup`);
     return this.internalSetup;
   }
 
   // this method exists because we need the start contract to create the `CoreStart` used to start
   // the `plugin` and `legacy` services.
-  public getStartContract(): InternalHttpServiceStart {
+  public getStartContract(opensearchStart): InternalHttpServiceStart {
     return {
       ...pick(this.internalSetup!, ['auth', 'basePath', 'getServerInfo']),
       isListening: () => this.httpServer.isListening(),
+      opensearch: opensearchStart,
     };
   }
 
-  public async start() {
+  public async start(opensearchStart: OpenSearchServiceStart) {
+    this.log.info(`***** entering HttpService start`);
     const config = await this.config$.pipe(first()).toPromise();
+
+    this.log.info(`start config is ${JSON.stringify(config)}`);
+
+    // const data = await opensearchStart.client.asInternalUser.cat
+    //   .indices<any[]>({
+    //     index: ".kibana",
+    //     format: 'JSON',
+    //     bytes: 'b',
+    //   });
+
+    // const data = await opensearchStart.client.asInternalUser.search
+    //   .index<any[]>({
+    //     index: ".kibana",
+    //     format: 'JSON',
+    //     bytes: 'b',
+    //   });
+    const xFrameOptions = await this.getXFrameOptions(opensearchStart);
+
+    config.customResponseHeaders['x-frame-options'] = xFrameOptions;
+    this.log.info(`xFrameOptions has value ${xFrameOptions}`);
+
+    this.log.info(`the new config has been updated to ${JSON.stringify(config)}`);
+
+    // const read = Index.reader(client, source.indexName, { batchSize, scrollDuration });
+
+    // log.info(`Migrating ${source.indexName} saved objects to ${dest.indexName}`);
+
+    // while (true) {
+    //   const docs = await read();
+
+    //   if (!docs || !docs.length) {
+    //     return;
+    //   }
+
+    //   log.debug(`Migrating saved objects ${docs.map((d) => d._id).join(', ')}`);
+
+    // }
+
     if (this.shouldListen(config)) {
       if (this.notReadyServer) {
         this.log.debug('stopping NotReady server');
@@ -157,7 +204,25 @@ export class HttpService
       await this.httpServer.start();
     }
 
-    return this.getStartContract();
+    this.log.info(`***** exit HttpService start`);
+    return this.getStartContract(opensearchStart);
+  }
+
+  private async getXFrameOptions(opensearchStart) {
+    const data = await opensearchStart.client.asInternalUser.search({
+      index: '.kibana',
+      scroll: SCROLL_TIMEOUT,
+      size: SCROLL_SIZE,
+      _source: true,
+      body: {
+        // query,
+      },
+      rest_total_hits_as_int: true, // not declared on SearchParams type
+    });
+
+    this.log.info(`index is ${JSON.stringify(data)}`);
+
+    return data.body.hits.hits[0]._source.config.xFrameOptions;
   }
 
   /**

@@ -177,6 +177,8 @@ export class HttpServer {
 
     for (const router of this.registeredRouters) {
       for (const route of router.getRoutes()) {
+        this.log.info(`inside route, the path is ${route.path}`);
+
         this.log.debug(`registering route handler for [${route.path}]`);
         // Hapi does not allow payload validation to be specified for 'head' or 'get' requests
         const validate = isSafeMethod(route.method) ? undefined : { payload: true };
@@ -225,6 +227,9 @@ export class HttpServer {
         ? this.config.basePath
         : '';
 
+    this.log.info(
+      `*** configuration inside start of http server is ${JSON.stringify(this.config)}`
+    );
     this.log.info(`http server running at ${this.server.info.uri}${serverPath}`);
   }
 

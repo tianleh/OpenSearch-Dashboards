@@ -111,6 +111,8 @@ export class Server {
     this.log = this.logger.get('server');
     this.configService = new ConfigService(rawConfigProvider, env, this.logger);
 
+    this.log.info(`****** new all services`);
+
     const core = { coreId, configService: this.configService, env, logger: this.logger };
     this.context = new ContextService(core);
     this.http = new HttpService(core);
@@ -265,7 +267,7 @@ export class Server {
     const capabilitiesStart = this.capabilities.start();
     const uiSettingsStart = await this.uiSettings.start();
     const metricsStart = await this.metrics.start();
-    const httpStart = this.http.getStartContract();
+    const httpStart = this.http.getStartContract(opensearchStart);
     const coreUsageDataStart = this.coreUsageData.start({
       opensearch: opensearchStart,
       savedObjects: savedObjectsStart,
@@ -297,8 +299,8 @@ export class Server {
       },
       plugins: mapToObject(pluginsStart.contracts),
     });
-
-    await this.http.start();
+    this.log.info('*** await this.http.start(opensearchStart);');
+    await this.http.start(opensearchStart);
 
     await this.security.start();
 

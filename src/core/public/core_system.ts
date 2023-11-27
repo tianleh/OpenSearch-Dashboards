@@ -154,6 +154,7 @@ export class CoreSystem {
       // Setup FatalErrorsService and it's dependencies first so that we're
       // able to render any errors.
       const injectedMetadata = this.injectedMetadata.setup();
+
       this.fatalErrorsSetup = this.fatalErrors.setup({
         injectedMetadata,
         i18n: this.i18n.getContext(),
@@ -204,6 +205,8 @@ export class CoreSystem {
       const uiSettings = await this.uiSettings.start();
       const docLinks = this.docLinks.start({ injectedMetadata });
       const http = await this.http.start();
+
+      console.log('***** start savedObjects service from core systems');
       const savedObjects = await this.savedObjects.start({ http });
       const i18n = await this.i18n.start();
       const fatalErrors = await this.fatalErrors.start();

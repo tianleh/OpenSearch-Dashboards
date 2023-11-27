@@ -399,7 +399,7 @@ export class SavedObjectsService
     if (!this.setupDeps || !this.config) {
       throw new Error('#setup() needs to be run first');
     }
-
+    this.logger.info('****** start saved objects');
     this.logger.debug('Starting SavedObjects service');
 
     if (this.savedObjectServiceCustomStatus$) {

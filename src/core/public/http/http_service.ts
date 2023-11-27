@@ -50,6 +50,9 @@ export class HttpService implements CoreService<HttpSetup, HttpStart> {
 
   public setup({ injectedMetadata, fatalErrors }: HttpDeps): HttpSetup {
     const opensearchDashboardsVersion = injectedMetadata.getOpenSearchDashboardsVersion();
+
+    console.log(`**** injectedMetadata is ${JSON.stringify(injectedMetadata)}`);
+
     const basePath = new BasePath(
       injectedMetadata.getBasePath(),
       injectedMetadata.getServerBasePath()
