@@ -92,11 +92,13 @@ export class HttpService
     ]).pipe(map(([http, csp]) => new HttpConfig(http, csp)));
     this.httpServer = new HttpServer(logger, 'OpenSearchDashboards');
     this.httpsRedirectServer = new HttpsRedirectServer(logger.get('http', 'redirect', 'server'));
+    // this.serverContract = '';
   }
 
   public async setup(deps: SetupDeps) {
     this.log.info(`***** entering HttpService setup`);
     this.requestHandlerContext = deps.context.createContextContainer();
+
     this.configSubscription = this.config$.subscribe(() => {
       if (this.httpServer.isListening()) {
         // If the server is already running we can't make any config changes
@@ -115,7 +117,10 @@ export class HttpService
 
     const { registerRouter, ...serverContract } = await this.httpServer.setup(config);
 
+    // this.serverContract = serverContract;
+
     this.log.info(`***** registerCoreHandlers(serverContract, config, this.env);`);
+
     registerCoreHandlers(serverContract, config, this.env);
 
     this.internalSetup = {
@@ -135,6 +140,8 @@ export class HttpService
       ) => this.requestHandlerContext!.registerContext(pluginOpaqueId, contextName, provider),
     };
     this.log.info(`***** exit HttpService setup`);
+
+    // try to move customer response handler here
     return this.internalSetup;
   }
 
@@ -152,7 +159,7 @@ export class HttpService
     this.log.info(`***** entering HttpService start`);
     const config = await this.config$.pipe(first()).toPromise();
 
-    this.log.info(`start config is ${JSON.stringify(config)}`);
+    // this.log.info(`start config is ${JSON.stringify(config)}`);
 
     // const data = await opensearchStart.client.asInternalUser.cat
     //   .indices<any[]>({
@@ -161,18 +168,20 @@ export class HttpService
     //     bytes: 'b',
     //   });
 
+    // this.log.info("*** found kibana index data " + JSON.stringify(data));
+
     // const data = await opensearchStart.client.asInternalUser.search
     //   .index<any[]>({
     //     index: ".kibana",
     //     format: 'JSON',
     //     bytes: 'b',
     //   });
-    const xFrameOptions = await this.getXFrameOptions(opensearchStart);
+    // const xFrameOptions = await this.getXFrameOptions(opensearchStart);
 
-    config.customResponseHeaders['x-frame-options'] = xFrameOptions;
-    this.log.info(`xFrameOptions has value ${xFrameOptions}`);
+    // config.customResponseHeaders['x-frame-options'] = xFrameOptions;
+    // this.log.info(`xFrameOptions has value ${xFrameOptions}`);
 
-    this.log.info(`the new config has been updated to ${JSON.stringify(config)}`);
+    // this.log.info(`the new config has been updated to ${JSON.stringify(config)}`);
 
     // const read = Index.reader(client, source.indexName, { batchSize, scrollDuration });
 
@@ -220,9 +229,9 @@ export class HttpService
       rest_total_hits_as_int: true, // not declared on SearchParams type
     });
 
-    this.log.info(`index is ${JSON.stringify(data)}`);
+    // this.log.info(`index is ${JSON.stringify(data)}`);
 
-    return data.body.hits.hits[0]._source.config.xFrameOptions;
+    return data.body.hits.hits[0]._source.config?.xFrameOptions;
   }
 
   /**

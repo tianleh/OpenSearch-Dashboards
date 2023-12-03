@@ -35,6 +35,7 @@ import {
   ResponseToolkit as HapiResponseToolkit,
 } from '@hapi/hapi';
 import Boom from '@hapi/boom';
+import { RequestHandlerContext } from 'opensearch-dashboards/server';
 import { Logger } from '../../logging';
 
 import { HapiResponseAdapter, OpenSearchDashboardsRequest, ResponseHeaders } from '../router';
@@ -137,6 +138,7 @@ export type OnPreResponseHandler = (
  */
 export function adoptToHapiOnPreResponseFormat(fn: OnPreResponseHandler, log: Logger) {
   return async function interceptPreResponse(
+    // context: RequestHandlerContext,
     request: Request,
     responseToolkit: HapiResponseToolkit
   ): Promise<Lifecycle.ReturnValue> {

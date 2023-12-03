@@ -273,3 +273,14 @@
 
 # Set the value of this setting to true to enable plugin augmentation on Dashboard
 # vis_augmenter.pluginAugmentationEnabled: true
+
+#  csp.frame_ancestors: ['https://example.org', 'https://example.com https://store.example.com']
+
+#  csp.rules: "frame_ancestors 'self' https://maps.googleapis.com"
+
+# csp.strict: true
+
+# csp.rules:
+#   - "frame_ancestors 'none'"
+server.name : smart-osd
+# server.customResponseHeaders: { "x-frame-options": "SAMEORIGIN" }

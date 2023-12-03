@@ -1,0 +1,7 @@
+{
+  "prefix": "xframeOptions",
+  "paths": {
+    "xframeOptions": "."
+  },
+  "translations": ["translations/ja-JP.json"]
+}

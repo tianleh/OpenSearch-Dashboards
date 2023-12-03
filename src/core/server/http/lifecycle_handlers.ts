@@ -28,12 +28,23 @@
  * under the License.
  */
 
+import { ContextContainer } from 'src/core/utils';
 import { OnPostAuthHandler } from './lifecycle/on_post_auth';
 import { OnPreResponseHandler } from './lifecycle/on_pre_response';
 import { HttpConfig } from './http_config';
 import { isSafeMethod } from './router';
 import { Env } from '../config';
 import { LifecycleRegistrar } from './http_server';
+import {
+  CoreSetup,
+  IClusterClient,
+  ILegacyClusterClient,
+  OpenSearchClient,
+  RequestHandlerContext,
+} from '..';
+import { InternalCoreSetup } from '../internal_types';
+import { createMigrationOpenSearchClient } from '../saved_objects/migrations/core';
+import { ContextService } from '../context';
 
 const VERSION_HEADER = 'osd-version';
 const XSRF_HEADER = 'osd-xsrf';
@@ -41,8 +52,11 @@ const OPENSEARCH_DASHBOARDS_NAME_HEADER = 'osd-name';
 
 export const createXsrfPostAuthHandler = (config: HttpConfig): OnPostAuthHandler => {
   const { whitelist, disableProtection } = config.xsrf;
+  console.log('*** createXsrfPostAuthHandler is called');
 
   return (request, response, toolkit) => {
+    console.log('*** inside createXsrfPostAuthHandler is called');
+
     if (
       disableProtection ||
       whitelist.includes(request.route.path) ||
@@ -66,7 +80,11 @@ export const createXsrfPostAuthHandler = (config: HttpConfig): OnPostAuthHandler
 export const createVersionCheckPostAuthHandler = (
   opensearchDashboardsVersion: string
 ): OnPostAuthHandler => {
+  console.log('*** createVersionCheckPostAuthHandler is called');
+
   return (request, response, toolkit) => {
+    console.log('*** inside createVersionCheckPostAuthHandler is called');
+
     const requestVersion = request.headers[VERSION_HEADER];
     if (requestVersion && requestVersion !== opensearchDashboardsVersion) {
       return response.badRequest({
@@ -91,10 +109,24 @@ export const createCustomHeadersPreResponseHandler = (config: HttpConfig): OnPre
   const customHeaders = config.customResponseHeaders;
 
   return (request, response, toolkit) => {
+    // createMigrationOpenSearchClient
+
+    console.log('*** inside createCustomHeadersPreResponseHandler is called');
+
+    // try to call system index here.
+    // const data = context.core.opensearch.client.asCurrentUser.ping();
+
+    // console.log("*******" + JSON.stringify(data));
+
     const additionalHeaders = {
       ...customHeaders,
       [OPENSEARCH_DASHBOARDS_NAME_HEADER]: serverName,
     };
+
+    console.log(
+      'inside createCustomHeadersPreResponseHandler, the response headers are ' +
+        JSON.stringify(request.headers)
+    );
 
     return toolkit.next({ headers: additionalHeaders });
   };
@@ -109,3 +141,11 @@ export const registerCoreHandlers = (
   registrar.registerOnPostAuth(createXsrfPostAuthHandler(config));
   registrar.registerOnPostAuth(createVersionCheckPostAuthHandler(env.packageInfo.version));
 };
+
+// export const registerXFrameOptionsHandlers = (
+//   registrar: LifecycleRegistrar,
+//   config: HttpConfig,
+//   env: Env
+// ) => {
+//   registrar.registerOnPreResponse(createXFrameOptionsPreResponseHandler(config));
+// };

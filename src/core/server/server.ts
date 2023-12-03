@@ -69,6 +69,7 @@ import { RequestHandlerContext } from '.';
 import { InternalCoreSetup, InternalCoreStart, ServiceConfigDescriptor } from './internal_types';
 import { CoreUsageDataService } from './core_usage_data';
 import { CoreRouteHandlerContext } from './core_route_handler_context';
+import { createXFrameOptionsPreResponseHandler } from './http/lifecycle_handlers';
 
 const coreId = Symbol('core');
 const rootConfigPath = '';
@@ -233,7 +234,10 @@ export class Server {
       security: securitySetup,
     };
 
+    // coreSetup.http.registerOnPreResponse();
+
     const pluginsSetup = await this.plugins.setup(coreSetup);
+
     this.#pluginsInitialized = pluginsSetup.initialized;
 
     await this.legacy.setup({
@@ -245,7 +249,10 @@ export class Server {
     this.registerCoreContext(coreSetup);
     this.coreApp.setup(coreSetup);
 
+    // coreSetup.http.registerOnPreResponse(createXFrameOptionsPreResponseHandler(coreSetup));
+
     setupTransaction?.end();
+
     return coreSetup;
   }
 
@@ -258,6 +265,7 @@ export class Server {
     const opensearchStart = await this.opensearch.start({
       auditTrail: auditTrailStart,
     });
+
     const soStartSpan = startTransaction?.startSpan('saved_objects.migration', 'migration');
     const savedObjectsStart = await this.savedObjects.start({
       opensearch: opensearchStart,

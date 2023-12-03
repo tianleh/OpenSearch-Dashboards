@@ -72,7 +72,13 @@ const callAPI = async (
   options: LegacyCallAPIOptions = { wrap401Errors: true }
 ) => {
   const clientPath = endpoint.split('.');
+
+  console.log('inside callAPI clientPath ' + clientPath);
+
   const api: any = get(client, clientPath);
+
+  // console.log("inside callAPI api " + JSON.stringify(api));
+
   if (!api) {
     throw new Error(`called with an invalid endpoint: ${endpoint}`);
   }
