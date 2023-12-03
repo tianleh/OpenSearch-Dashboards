@@ -70,5 +70,16 @@ export const getMiscUiSettings = (): Record<string, UiSettingsParams> => {
       // category: ['appearance'],
       schema: schema.oneOf([schema.literal('SAMEORIGIN'), schema.literal('DENY')]),
     },
+    cspRules: {
+      name: i18n.translate('data.advancedSettings.cspRules', {
+        defaultMessage: 'csp rules',
+      }),
+      // value: "frame-ancestors 'self'",
+      type: 'string',
+      description: i18n.translate('data.advancedSettings.cspRules', {
+        defaultMessage: 'csp rules',
+      }),
+      schema: schema.nullable(schema.string()),
+    },
   };
 };

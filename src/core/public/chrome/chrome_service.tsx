@@ -191,6 +191,7 @@ export class ChromeService {
       return msie > 0 || trident > 0;
     };
 
+    console.log('**** this.params.browserSupportsCsp is ' + this.params.browserSupportsCsp);
     if (!this.params.browserSupportsCsp && injectedMetadata.getCspConfig().warnLegacyBrowsers) {
       notifications.toasts.addWarning({
         title: mountReactNode(

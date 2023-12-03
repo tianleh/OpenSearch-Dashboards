@@ -274,9 +274,12 @@
 # Set the value of this setting to true to enable plugin augmentation on Dashboard
 # vis_augmenter.pluginAugmentationEnabled: true
 
-#  csp.frame_ancestors: ['https://example.org', 'https://example.com https://store.example.com']
+#  csp.frame-ancestors: ['https://example.org', 'https://example.com https://store.example.com']
 
-#  csp.rules: "frame_ancestors 'self' https://maps.googleapis.com"
+# csp.rules: ["frame-ancestors 'https://maps.googleapis.com'"]
+# csp.rules: ["frame-ancestors 'self' file://* filesystem:"]
+
+# csp.rules: ["form-action 'self'", "frame-ancestors 'https://maps.googleapis.com'"]
 
 # csp.strict: true
 

@@ -124,4 +124,5 @@ export const stackManagementSchema: MakeSchemaFrom<UsageStats> = {
   'dateFormat:dow': { type: 'keyword' },
   dateFormat: { type: 'keyword' },
   xFrameOptions: { type: 'keyword' },
+  cspRules: { type: 'keyword' },
 };

@@ -105,7 +105,8 @@ export class XframeOptionsPlugin
 
       const additionalHeaders = {
         // ...customHeaders,
-        ['x-frame-options']: data,
+        // ['content-security-policy']: "form-action 'self'; frame-ancestors 'https://maps.googleapis.com'",
+        ['content-security-policy']: data,
       };
 
       console.log(
@@ -142,6 +143,6 @@ export class XframeOptionsPlugin
 
     console.log('******* raw index is ' + JSON.stringify(data.body.hits.hits));
 
-    return data.body.hits.hits[0]?._source.config?.xFrameOptions;
+    return data.body.hits.hits[0]?._source.config?.cspRules;
   }
 }
