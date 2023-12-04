@@ -14,6 +14,7 @@ import { defineRoutes } from './routes';
 
 const SCROLL_SIZE = 10000;
 const SCROLL_TIMEOUT = '1m';
+const OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME = '.opensearch_dashboards_config';
 
 export class XframeOptionsPlugin
   implements Plugin<XframeOptionsPluginSetup, XframeOptionsPluginStart> {
@@ -49,12 +50,42 @@ export class XframeOptionsPlugin
     return {};
   }
 
-  public start(core: CoreStart) {
+  public async start(core: CoreStart) {
     this.logger.debug('XFrameOptions: Started');
+    this.logger.info('XFrameOptions: Started');
+
+    const client = core.opensearch.client.asInternalUser;
+    const exists = await client.indices.exists({
+      index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME
+    });
+
+    this.logger.info('***** exists: ' + exists.body + ' ' + typeof (exists.body));
+
+    if (!exists.body) {
+      this.logger.info('***** going to create index');
+
+      // create index
+      // const createResponse = await client.indices.create({
+      //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME
+      // });
+
+      const indexResponse = await client.index({
+        index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+        id: "csp.rules",
+        body: {
+          "value": "frame-ancestors 'self'"
+        }
+      });
+
+      this.logger.info('***** createResponse: ' + JSON.stringify(indexResponse));
+
+    }
+
+
     return {};
   }
 
-  public stop() {}
+  public stop() { }
 
   public createXFrameOptionsPreResponseHandler(core: CoreSetup): OnPreResponseHandler {
     console.log('*** createXFrameOptionsPreResponseHandler is called');
@@ -68,7 +99,7 @@ export class XframeOptionsPlugin
       console.log('*** inside createCustomHeadersPreResponseHandler is called');
       console.log(
         '*** inside createCustomHeadersPreResponseHandler is headers ' +
-          JSON.stringify(request.headers)
+        JSON.stringify(request.headers)
       );
 
       const [coreStart] = await core.getStartServices();
@@ -101,7 +132,7 @@ export class XframeOptionsPlugin
       // const data = context.core.opensearch.client.asCurrentUser.ping();
 
       // console.log("*******" + JSON.stringify(data));
-      console.log('**** request.headers are ' + JSON.stringify(request.headers));
+      // console.log('**** request.headers are ' + JSON.stringify(request.headers));
 
       const additionalHeaders = {
         // ...customHeaders,
@@ -111,7 +142,7 @@ export class XframeOptionsPlugin
 
       console.log(
         '**** inside createXFrameOptionsPreResponseHandler the additionalHeaders customHeaders are ' +
-          JSON.stringify(additionalHeaders)
+        JSON.stringify(additionalHeaders)
       );
 
       return toolkit.next({ headers: additionalHeaders });
@@ -123,15 +154,15 @@ export class XframeOptionsPlugin
     const query = {
       query: {
         match: {
-          type: {
-            query: 'config',
+          _id: {
+            query: 'csp.rules',
           },
         },
       },
     };
 
     const data = await client.asInternalUser.search({
-      index: '.kibana',
+      index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
       scroll: SCROLL_TIMEOUT,
       size: SCROLL_SIZE,
       _source: true,
@@ -139,10 +170,10 @@ export class XframeOptionsPlugin
       rest_total_hits_as_int: true, // not declared on SearchParams type
     });
 
-    console.log('******* raw index is ' + JSON.stringify(data));
+    // console.log('******* raw index is ' + JSON.stringify(data));
 
     console.log('******* raw index is ' + JSON.stringify(data.body.hits.hits));
 
-    return data.body.hits.hits[0]?._source.config?.cspRules;
+    return data.body.hits.hits[0]?._source.value;
   }
 }
