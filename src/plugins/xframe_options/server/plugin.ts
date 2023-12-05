@@ -56,10 +56,10 @@ export class XframeOptionsPlugin
 
     const client = core.opensearch.client.asInternalUser;
     const exists = await client.indices.exists({
-      index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME
+      index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
     });
 
-    this.logger.info('***** exists: ' + exists.body + ' ' + typeof (exists.body));
+    this.logger.info('***** exists: ' + exists.body + ' ' + typeof exists.body);
 
     if (!exists.body) {
       this.logger.info('***** going to create index');
@@ -71,21 +71,19 @@ export class XframeOptionsPlugin
 
       const indexResponse = await client.index({
         index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
-        id: "csp.rules",
+        id: 'csp.rules',
         body: {
-          "value": "frame-ancestors 'self'"
-        }
+          value: "frame-ancestors 'self'",
+        },
       });
 
       this.logger.info('***** createResponse: ' + JSON.stringify(indexResponse));
-
     }
-
 
     return {};
   }
 
-  public stop() { }
+  public stop() {}
 
   public createXFrameOptionsPreResponseHandler(core: CoreSetup): OnPreResponseHandler {
     console.log('*** createXFrameOptionsPreResponseHandler is called');
@@ -99,7 +97,7 @@ export class XframeOptionsPlugin
       console.log('*** inside createCustomHeadersPreResponseHandler is called');
       console.log(
         '*** inside createCustomHeadersPreResponseHandler is headers ' +
-        JSON.stringify(request.headers)
+          JSON.stringify(request.headers)
       );
 
       const [coreStart] = await core.getStartServices();
@@ -142,7 +140,7 @@ export class XframeOptionsPlugin
 
       console.log(
         '**** inside createXFrameOptionsPreResponseHandler the additionalHeaders customHeaders are ' +
-        JSON.stringify(additionalHeaders)
+          JSON.stringify(additionalHeaders)
       );
 
       return toolkit.next({ headers: additionalHeaders });
