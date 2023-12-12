@@ -74,18 +74,12 @@ export class HttpResourcesService implements CoreService<InternalHttpResourcesSe
   stop() {}
 
   private createRegistrar(deps: SetupDeps, router: IRouter): HttpResources {
-    this.logger.info('**** inside createRegistrar at HttpResourcesService');
     return {
       register: <P, Q, B>(
         route: RouteConfig<P, Q, B, 'get'>,
         handler: HttpResourcesRequestHandler<P, Q, B>
       ) => {
-        this.logger.info('***** at first register ' + route.path);
-
         return router.get<P, Q, B>(route, (context, request, response) => {
-          this.logger.info('***** inside register ');
-          // const data = context.core.opensearch.client.asCurrentUser.ping();
-          // this.logger.info("*** inside HttpResourcesService " + JSON.stringify(data));
           return handler(context, request, {
             ...response,
             ...this.createResponseToolkit(deps, context, request, response),

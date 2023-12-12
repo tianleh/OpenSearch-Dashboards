@@ -1,4 +1,10 @@
-import { HttpConfig } from 'src/core/server/http';
+import {
+  HttpConfig,
+  IRouter,
+  OpenSearchDashboardsRequest,
+  OpenSearchDashboardsResponseFactory,
+  RouteConfig,
+} from 'src/core/server/http';
 import {
   PluginInitializerContext,
   CoreSetup,
@@ -7,6 +13,11 @@ import {
   Logger,
   IClusterClient,
   OnPreResponseHandler,
+  HttpResources,
+  HttpResourcesRequestHandler,
+  RequestHandlerContext,
+  HttpResourcesServiceToolkit,
+  HttpResourcesRenderOptions,
 } from '../../../core/server';
 
 import { XframeOptionsPluginSetup, XframeOptionsPluginStart } from './types';
@@ -47,7 +58,9 @@ export class XframeOptionsPlugin
 
     // this.logger.info("**** data is " + JSON.stringify(data));
 
-    return {};
+    return {
+      // createRegistrar: this.createRegistrar.bind(this, core),
+    };
   }
 
   public async start(core: CoreStart) {
@@ -94,12 +107,19 @@ export class XframeOptionsPlugin
     // console.log("**** the initial customHeaders are " + JSON.stringify(customHeaders));
 
     return async (request, response, toolkit) => {
-      console.log('*** inside createCustomHeadersPreResponseHandler is called');
+      console.log('*** inside createXFrameOptionsPreResponseHandler is called');
       console.log(
-        '*** inside createCustomHeadersPreResponseHandler is headers ' +
-          JSON.stringify(request.headers)
+        '*** inside createXFrameOptionsPreResponseHandler is headers ' + JSON.stringify(request.url)
       );
 
+      const exclude = /(\.(js)|(svg)|(json)|(png)|(css))$/;
+
+      if (exclude.test(request.url.toString())) {
+        // skip
+        return toolkit.next({});
+      }
+
+      // response.statusCode;
       const [coreStart] = await core.getStartServices();
 
       const client = coreStart.opensearch.client;
