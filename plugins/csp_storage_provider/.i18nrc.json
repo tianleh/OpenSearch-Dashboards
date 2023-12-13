@@ -1,0 +1,7 @@
+{
+  "prefix": "cspStorageProvider",
+  "paths": {
+    "cspStorageProvider": "."
+  },
+  "translations": ["translations/ja-JP.json"]
+}
