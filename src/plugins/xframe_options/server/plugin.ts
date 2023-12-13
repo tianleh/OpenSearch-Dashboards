@@ -31,18 +31,21 @@ export class XframeOptionsPlugin
   implements Plugin<XframeOptionsPluginSetup, XframeOptionsPluginStart> {
   private readonly logger: Logger;
 
-  private cspClient: CspClient;
+  private cspClient: CspClient | undefined;
 
   constructor(initializerContext: PluginInitializerContext) {
     this.logger = initializerContext.logger.get();
-    this.cspClient = null;
+    this.cspClient = undefined;
   }
 
   private setCspClient(inputCspClient: CspClient) {
+    console.log('***** set the configured cspClient');
+
     this.cspClient = inputCspClient;
   }
 
   private getCspClient(inputOpenSearchClient: OpenSearchClient) {
+    this.logger.info('***** getCspClient');
     if (this.cspClient) {
       this.logger.info('***** use the configured cspClient');
       return this.cspClient;
@@ -77,7 +80,7 @@ export class XframeOptionsPlugin
 
     return {
       // createRegistrar: this.createRegistrar.bind(this, core),
-      setCspClient: this.setCspClient,
+      setCspClient: this.setCspClient.bind(this),
     };
   }
 
@@ -141,7 +144,7 @@ export class XframeOptionsPlugin
         '*** inside createXFrameOptionsPreResponseHandler is headers ' + JSON.stringify(request.url)
       );
 
-      const exclude = /(\.(js)|(svg)|(json)|(png)|(css))$/;
+      const exclude = /(\.(js)|(svg)|(json)|(png)|(css)|(woff2))$/;
 
       if (exclude.test(request.url.toString())) {
         // skip

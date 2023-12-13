@@ -123,10 +123,10 @@ export const createCustomHeadersPreResponseHandler = (config: HttpConfig): OnPre
       [OPENSEARCH_DASHBOARDS_NAME_HEADER]: serverName,
     };
 
-    console.log(
-      'inside createCustomHeadersPreResponseHandler, the response headers are ' +
-        JSON.stringify(request.headers)
-    );
+    // console.log(
+    //   'inside createCustomHeadersPreResponseHandler, the response headers are ' +
+    //     JSON.stringify(request.headers)
+    // );
 
     return toolkit.next({ headers: additionalHeaders });
   };

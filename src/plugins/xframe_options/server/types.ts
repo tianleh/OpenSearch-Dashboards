@@ -1,5 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface XframeOptionsPluginSetup {}
+export interface XframeOptionsPluginSetup {
+  setCspClient: (inputCspClient: CspClient) => void;
+}
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface XframeOptionsPluginStart {}
 
