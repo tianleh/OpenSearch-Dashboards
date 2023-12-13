@@ -18,21 +18,38 @@ import {
   RequestHandlerContext,
   HttpResourcesServiceToolkit,
   HttpResourcesRenderOptions,
+  OpenSearchClient,
 } from '../../../core/server';
 
-import { XframeOptionsPluginSetup, XframeOptionsPluginStart } from './types';
+import { CspClient, XframeOptionsPluginSetup, XframeOptionsPluginStart } from './types';
 import { defineRoutes } from './routes';
+import { OpenSearchCspClient } from './provider';
 
-const SCROLL_SIZE = 10000;
-const SCROLL_TIMEOUT = '1m';
 const OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME = '.opensearch_dashboards_config';
 
 export class XframeOptionsPlugin
   implements Plugin<XframeOptionsPluginSetup, XframeOptionsPluginStart> {
   private readonly logger: Logger;
 
+  private cspClient: CspClient;
+
   constructor(initializerContext: PluginInitializerContext) {
     this.logger = initializerContext.logger.get();
+    this.cspClient = null;
+  }
+
+  private setCspClient(inputCspClient: CspClient) {
+    this.cspClient = inputCspClient;
+  }
+
+  private getCspClient(inputOpenSearchClient: OpenSearchClient) {
+    if (this.cspClient) {
+      this.logger.info('***** use the configured cspClient');
+      return this.cspClient;
+    }
+
+    this.logger.info('***** use the default open search cspClient');
+    return new OpenSearchCspClient(inputOpenSearchClient);
   }
 
   public async setup(core: CoreSetup) {
@@ -60,6 +77,7 @@ export class XframeOptionsPlugin
 
     return {
       // createRegistrar: this.createRegistrar.bind(this, core),
+      setCspClient: this.setCspClient,
     };
   }
 
@@ -67,14 +85,17 @@ export class XframeOptionsPlugin
     this.logger.debug('XFrameOptions: Started');
     this.logger.info('XFrameOptions: Started');
 
-    const client = core.opensearch.client.asInternalUser;
-    const exists = await client.indices.exists({
-      index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
-    });
+    // const client = core.opensearch.client.asInternalUser;
+    // const exists = await client.indices.exists({
+    //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+    // });
+    const myClient = this.getCspClient(core.opensearch.client.asInternalUser);
+    // const myClient = new OpenSearchCspClient(core.opensearch.client.asInternalUser);
+    const existsResult = await myClient.exists(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME);
 
-    this.logger.info('***** exists: ' + exists.body + ' ' + typeof exists.body);
+    this.logger.info('***** exists: ' + existsResult + ' ' + typeof existsResult);
 
-    if (!exists.body) {
+    if (!existsResult) {
       this.logger.info('***** going to create index');
 
       // create index
@@ -82,13 +103,21 @@ export class XframeOptionsPlugin
       //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME
       // });
 
-      const indexResponse = await client.index({
-        index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
-        id: 'csp.rules',
-        body: {
+      const indexResponse = await myClient.update(
+        OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+        'csp.rules',
+        {
           value: "frame-ancestors 'self'",
-        },
-      });
+        }
+      );
+
+      // const indexResponse = await client.index({
+      //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+      //   id: 'csp.rules',
+      //   body: {
+      //     value: "frame-ancestors 'self'",
+      //   },
+      // });
 
       this.logger.info('***** createResponse: ' + JSON.stringify(indexResponse));
     }
@@ -122,14 +151,17 @@ export class XframeOptionsPlugin
       // response.statusCode;
       const [coreStart] = await core.getStartServices();
 
-      const client = coreStart.opensearch.client;
-
       // const opensearchClient: ILegacyClusterClient = coreSetup.opensearch.legacy.createClient("xframeoptions");
       // core.getStartServices();
       // console.log("***** client is " + client);
       // console.log("*** type of request " + typeof (request));
 
-      const data = await this.getXFrameOptions(client);
+      // const myClient = new OpenSearchCspClient(coreStart.opensearch.client.asInternalUser);
+      const myClient = this.getCspClient(coreStart.opensearch.client.asInternalUser);
+
+      const data = await myClient.search(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME, 'csp.rules');
+      // const data = await this.getXFrameOptions(client);
+
       // const data = await client.asInternalUser.cat
       //   .indices<any[]>({
       //     index: ".kibana",
@@ -167,31 +199,31 @@ export class XframeOptionsPlugin
     };
   }
 
-  private async getXFrameOptions(client: IClusterClient) {
-    // Search for the document.
-    const query = {
-      query: {
-        match: {
-          _id: {
-            query: 'csp.rules',
-          },
-        },
-      },
-    };
+  // private async getXFrameOptions(client: IClusterClient) {
+  //   // Search for the document.
+  //   const query = {
+  //     query: {
+  //       match: {
+  //         _id: {
+  //           query: 'csp.rules',
+  //         },
+  //       },
+  //     },
+  //   };
 
-    const data = await client.asInternalUser.search({
-      index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
-      scroll: SCROLL_TIMEOUT,
-      size: SCROLL_SIZE,
-      _source: true,
-      body: query,
-      rest_total_hits_as_int: true, // not declared on SearchParams type
-    });
+  //   const data = await client.asInternalUser.search({
+  //     index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+  //     // scroll: SCROLL_TIMEOUT,
+  //     // size: SCROLL_SIZE,
+  //     _source: true,
+  //     body: query,
+  //     rest_total_hits_as_int: true, // not declared on SearchParams type
+  //   });
 
-    // console.log('******* raw index is ' + JSON.stringify(data));
+  //   // console.log('******* raw index is ' + JSON.stringify(data));
 
-    console.log('******* raw index is ' + JSON.stringify(data.body.hits.hits));
+  //   console.log('******* raw index is ' + JSON.stringify(data.body.hits.hits));
 
-    return data.body.hits.hits[0]?._source.value;
-  }
+  //   return data.body.hits.hits[0]?._source.value;
+  // }
 }
