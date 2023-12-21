@@ -60,7 +60,7 @@ export class CspStorageProviderPlugin
       this.logger.info('CspStorageProvider: Setup customClient is invalid');
     }
 
-    xframeOptions.setCspClient(customClient);
+    // xframeOptions.setCspClient(customClient);
     // Register server side APIs
     defineRoutes(router);
 

@@ -26,6 +26,7 @@ import { defineRoutes } from './routes';
 import { OpenSearchCspClient } from './provider';
 
 const OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME = '.opensearch_dashboards_config';
+const OPENSEARCH_DASHBOARDS_CONFIG_DOCUMENT_NAME = 'csp.rules';
 
 export class XframeOptionsPlugin
   implements Plugin<XframeOptionsPluginSetup, XframeOptionsPluginStart> {
@@ -92,38 +93,38 @@ export class XframeOptionsPlugin
     // const exists = await client.indices.exists({
     //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
     // });
-    const myClient = this.getCspClient(core.opensearch.client.asInternalUser);
+    // const myClient = this.getCspClient(core.opensearch.client.asInternalUser);
     // const myClient = new OpenSearchCspClient(core.opensearch.client.asInternalUser);
-    const existsResult = await myClient.exists(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME);
+    // const existsResult = await myClient.exists(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME);
 
-    this.logger.info('***** exists: ' + existsResult + ' ' + typeof existsResult);
+    // this.logger.info('***** exists: ' + existsResult + ' ' + typeof existsResult);
 
-    if (!existsResult) {
-      this.logger.info('***** going to create index');
+    // if (!existsResult) {
+    //   this.logger.info('***** going to create index');
 
-      // create index
-      // const createResponse = await client.indices.create({
-      //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME
-      // });
+    //   // create index
+    //   // const createResponse = await client.indices.create({
+    //   //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME
+    //   // });
 
-      const indexResponse = await myClient.update(
-        OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
-        'csp.rules',
-        {
-          value: "frame-ancestors 'self'",
-        }
-      );
+    //   const indexResponse = await myClient.update(
+    //     OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+    //     OPENSEARCH_DASHBOARDS_CONFIG_DOCUMENT_NAME,
+    //     {
+    //       value: "frame-ancestors 'self'",
+    //     }
+    //   );
 
-      // const indexResponse = await client.index({
-      //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
-      //   id: 'csp.rules',
-      //   body: {
-      //     value: "frame-ancestors 'self'",
-      //   },
-      // });
+    //   // const indexResponse = await client.index({
+    //   //   index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+    //   //   id: 'csp.rules',
+    //   //   body: {
+    //   //     value: "frame-ancestors 'self'",
+    //   //   },
+    //   // });
 
-      this.logger.info('***** createResponse: ' + JSON.stringify(indexResponse));
-    }
+    //   this.logger.info('***** createResponse: ' + JSON.stringify(indexResponse));
+    // }
 
     return {};
   }
@@ -141,15 +142,41 @@ export class XframeOptionsPlugin
     return async (request, response, toolkit) => {
       console.log('*** inside createXFrameOptionsPreResponseHandler is called');
       console.log(
-        '*** inside createXFrameOptionsPreResponseHandler is headers ' + JSON.stringify(request.url)
+        '*** inside createXFrameOptionsPreResponseHandler is request.url ' +
+          JSON.stringify(request.url)
       );
 
-      const exclude = /(\.(js)|(svg)|(json)|(png)|(css)|(woff2))$/;
+      console.log(
+        '*** inside createXFrameOptionsPreResponseHandler is request all ' +
+          JSON.stringify(request.body) +
+          JSON.stringify(request.headers) +
+          JSON.stringify(request.id) +
+          JSON.stringify(request.isSystemRequest) +
+          JSON.stringify(request.params) +
+          JSON.stringify(request.query) +
+          '***' +
+          JSON.stringify(request.route.method) +
+          JSON.stringify(request.route.options) +
+          'abcd*' +
+          JSON.stringify(request.route.path)
+      );
 
-      if (exclude.test(request.url.toString())) {
-        // skip
+      const shouldCheck = ['document', 'frame', 'iframe', 'embed', 'object'];
+      // const shouldCheck = ['document', 'frame', 'iframe'];
+      const fetchDest = request.headers['sec-fetch-dest'];
+      if (!shouldCheck.includes(fetchDest)) {
+        console.log('***** non document request, skipping');
         return toolkit.next({});
       }
+
+      console.log('***** document request, verifying');
+
+      // const exclude = /(\.(js)|(svg)|(json)|(png)|(css)|(woff2))$/;
+
+      // if (exclude.test(request.url.toString())) {
+      //   // skip
+      //   return toolkit.next({});
+      // }
 
       // response.statusCode;
       const [coreStart] = await core.getStartServices();
@@ -162,35 +189,50 @@ export class XframeOptionsPlugin
       // const myClient = new OpenSearchCspClient(coreStart.opensearch.client.asInternalUser);
       const myClient = this.getCspClient(coreStart.opensearch.client.asInternalUser);
 
-      const data = await myClient.search(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME, 'csp.rules');
-      // const data = await this.getXFrameOptions(client);
+      const existsData = await myClient.exists(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME);
+      // if (myClient.exists(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME)) {
 
-      // const data = await client.asInternalUser.cat
-      //   .indices<any[]>({
-      //     index: ".kibana",
-      //     format: 'JSON',
-      //     bytes: 'b',
-      //   });
+      // }
+      let head;
+      const defaultValue = "frame-ancestors 'self'";
+      if (!existsData) {
+        head = defaultValue;
 
-      console.log('******* getXFrameOptions is ' + data);
+        console.log('*** return a default value');
+      } else {
+        const data = await myClient.search(OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME, 'csp.rules');
+        // const data = await this.getXFrameOptions(client);
 
-      // const esResponse = await opensearchClient
-      //   .asScoped(request)
-      //   .callAsCurrentUser('cat', {
-      //     index: ".kibana"
-      //   });
+        // const data = await client.asInternalUser.cat
+        //   .indices<any[]>({
+        //     index: ".kibana",
+        //     format: 'JSON',
+        //     bytes: 'b',
+        //   });
 
-      // console.log("**** esResponse " + JSON.stringify(esResponse));
-      // try to call system index here.
-      // const data = context.core.opensearch.client.asCurrentUser.ping();
+        console.log('******* getXFrameOptions is ' + data);
 
-      // console.log("*******" + JSON.stringify(data));
-      // console.log('**** request.headers are ' + JSON.stringify(request.headers));
+        // const esResponse = await opensearchClient
+        //   .asScoped(request)
+        //   .callAsCurrentUser('cat', {
+        //     index: ".kibana"
+        //   });
 
+        // console.log("**** esResponse " + JSON.stringify(esResponse));
+        // try to call system index here.
+        // const data = context.core.opensearch.client.asCurrentUser.ping();
+
+        // console.log("*******" + JSON.stringify(data));
+        // console.log('**** request.headers are ' + JSON.stringify(request.headers));
+
+        head = data || defaultValue;
+      }
+
+      console.log('*** going to set head as ' + head);
       const additionalHeaders = {
         // ...customHeaders,
         // ['content-security-policy']: "form-action 'self'; frame-ancestors 'https://maps.googleapis.com'",
-        ['content-security-policy']: data,
+        ['content-security-policy']: head,
       };
 
       console.log(

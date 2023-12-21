@@ -24,15 +24,15 @@ export class OpenSearchCspClient implements CspClient {
     return exists.body;
   }
 
-  async update(indexName: string, docName: string, body: {}): Promise<string> {
-    const indexResponse = await this.client.index({
-      index: indexName,
-      id: docName,
-      body,
-    });
+  // async update(indexName: string, docName: string, body: {}): Promise<string> {
+  //   const indexResponse = await this.client.index({
+  //     index: indexName,
+  //     id: docName,
+  //     body,
+  //   });
 
-    return JSON.stringify(indexResponse);
-  }
+  //   return JSON.stringify(indexResponse);
+  // }
 
   async search(indexName: string, docName: string): Promise<string> {
     const query = {
@@ -46,7 +46,7 @@ export class OpenSearchCspClient implements CspClient {
     };
 
     const data = await this.client.search({
-      index: OPENSEARCH_DASHBOARDS_CONFIG_INDEX_NAME,
+      index: indexName,
       scroll: SCROLL_TIMEOUT,
       size: SCROLL_SIZE,
       _source: true,
