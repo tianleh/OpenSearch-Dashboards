@@ -66,6 +66,10 @@ export class XframeOptionsPlugin
     // const [coreStart] = await core.getStartServices();
 
     // const client = coreStart.opensearch.client;
+    this.logger.info(
+      `** inside the current rules ${core.http.csp.rules}, **** ${core.http.csp.header}`
+    );
+
     core.http.registerOnPreResponse(this.createXFrameOptionsPreResponseHandler(core));
 
     // const [coreStart] = await core.getStartServices();
@@ -194,7 +198,7 @@ export class XframeOptionsPlugin
 
       // }
       let head;
-      const defaultValue = "frame-ancestors 'self'";
+      const defaultValue = core.http.csp.header;
       if (!existsData) {
         head = defaultValue;
 

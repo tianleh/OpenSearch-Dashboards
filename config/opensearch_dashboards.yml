@@ -279,6 +279,9 @@
 # csp.rules: ["frame-ancestors 'https://maps.googleapis.com'"]
 # csp.rules: ["frame-ancestors 'self' file://* filesystem:"]
 
+# csp.rules: ["frame-ancestors 'self' file://* filesystem:"]
+
+
 # csp.rules: ["form-action 'self'", "frame-ancestors 'https://maps.googleapis.com'"]
 
 # csp.strict: true
