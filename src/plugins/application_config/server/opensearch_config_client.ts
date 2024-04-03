@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import NodeCache from 'node-cache';
 import { IScopedClusterClient, Logger } from '../../../../src/core/server';
 
 import { ConfigurationClient } from './types';
@@ -12,19 +13,29 @@ export class OpenSearchConfigurationClient implements ConfigurationClient {
   private client: IScopedClusterClient;
   private configurationIndexName: string;
   private readonly logger: Logger;
+  private cache: NodeCache;
 
   constructor(
     scopedClusterClient: IScopedClusterClient,
     configurationIndexName: string,
-    logger: Logger
+    logger: Logger,
+    configurationCache: NodeCache
   ) {
     this.client = scopedClusterClient;
     this.configurationIndexName = configurationIndexName;
     this.logger = logger;
+    this.cache = configurationCache;
   }
 
   async getEntityConfig(entity: string) {
     const entityValidated = validate(entity, this.logger);
+
+    if (this.cache.has(entityValidated)) {
+      this.logger.info(`return value from cache for ${entityValidated}`);
+      return this.cache.get(entityValidated);
+    }
+
+    this.logger.info(`no value from cache for ${entityValidated}`);
 
     try {
       const data = await this.client.asInternalUser.get({
@@ -32,11 +43,17 @@ export class OpenSearchConfigurationClient implements ConfigurationClient {
         id: entityValidated,
       });
 
-      return data?.body?._source?.value || '';
+      const value = data?.body?._source?.value || '';
+
+      this.cache.set(entityValidated, value);
+
+      return value;
     } catch (e) {
       const errorMessage = `Failed to get entity ${entityValidated} due to error ${e}`;
 
       this.logger.error(errorMessage);
+
+      this.cache.set(entityValidated, undefined);
 
       throw e;
     }
@@ -54,6 +71,8 @@ export class OpenSearchConfigurationClient implements ConfigurationClient {
           value: newValueValidated,
         },
       });
+
+      this.cache.set(entityValidated, newValueValidated);
 
       return newValueValidated;
     } catch (e) {
@@ -73,6 +92,8 @@ export class OpenSearchConfigurationClient implements ConfigurationClient {
         index: this.configurationIndexName,
         id: entityValidated,
       });
+
+      this.cache.del(entityValidated);
 
       return entityValidated;
     } catch (e) {

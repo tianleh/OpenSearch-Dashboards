@@ -6,6 +6,7 @@
 import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
+import NodeCache from 'node-cache';
 import {
   PluginInitializerContext,
   CoreSetup,
@@ -29,6 +30,8 @@ export class ApplicationConfigPlugin
   private readonly logger: Logger;
   private readonly config$: Observable<SharedGlobalConfig>;
 
+  private configurationCache: NodeCache;
+
   private configurationClient: ConfigurationClient;
   private configurationIndexName: string;
 
@@ -36,6 +39,8 @@ export class ApplicationConfigPlugin
     this.logger = initializerContext.logger.get();
     this.config$ = initializerContext.config.legacy.globalConfig$;
     this.configurationIndexName = '';
+
+    this.configurationCache = new NodeCache();
   }
 
   private registerConfigurationClient(configurationClient: ConfigurationClient) {
@@ -58,7 +63,8 @@ export class ApplicationConfigPlugin
     const openSearchConfigurationClient = new OpenSearchConfigurationClient(
       scopedClusterClient,
       this.configurationIndexName,
-      this.logger
+      this.logger,
+      this.configurationCache
     );
 
     return openSearchConfigurationClient;
