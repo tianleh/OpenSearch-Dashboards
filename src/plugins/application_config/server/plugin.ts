@@ -6,6 +6,7 @@
 import { Observable } from 'rxjs';
 import { first } from 'rxjs/operators';
 
+import LRUCache from 'lru-cache';
 import {
   PluginInitializerContext,
   CoreSetup,
@@ -28,6 +29,7 @@ export class ApplicationConfigPlugin
   implements Plugin<ApplicationConfigPluginSetup, ApplicationConfigPluginStart> {
   private readonly logger: Logger;
   private readonly config$: Observable<SharedGlobalConfig>;
+  private cache: LRUCache;
 
   private configurationClient: ConfigurationClient;
   private configurationIndexName: string;
@@ -36,6 +38,11 @@ export class ApplicationConfigPlugin
     this.logger = initializerContext.logger.get();
     this.config$ = initializerContext.config.legacy.globalConfig$;
     this.configurationIndexName = '';
+
+    this.cache = new LRUCache({
+      max: 30,
+      maxAge: 100 * 1000,
+    });
   }
 
   private registerConfigurationClient(configurationClient: ConfigurationClient) {
@@ -58,7 +65,8 @@ export class ApplicationConfigPlugin
     const openSearchConfigurationClient = new OpenSearchConfigurationClient(
       scopedClusterClient,
       this.configurationIndexName,
-      this.logger
+      this.logger,
+      this.cache
     );
 
     return openSearchConfigurationClient;
